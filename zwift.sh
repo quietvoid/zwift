@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 set -x
+set -e
 
-# Set the container image to use
-IMAGE=${IMAGE:-docker.io/netbrain/zwift}
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+source $SCRIPT_DIR/bin/common.sh
 
 # The container version
 VERSION=${VERSION:-latest}
+
+set_vga_device_env
 
 # Use podman if available
 if [[ ! $CONTAINER_TOOL ]]
@@ -18,33 +21,19 @@ then
     fi
 fi
 
-# Check for updated container image
-if [[ ! $DONT_PULL ]]
-then
-    $CONTAINER_TOOL pull $IMAGE:$VERSION
-fi
-
-# Check for proprietary nvidia driver and set correct device to use
-if [[ -f "/proc/driver/nvidia/version" ]]
-then
-    VGA_DEVICE_FLAG="--gpus all"
-else
-    VGA_DEVICE_FLAG="--device /dev/dri:/dev/dri"
-fi
-
-
 # Start the zwift container
 CONTAINER=$($CONTAINER_TOOL run \
     -d \
     --rm \
     --privileged \
+    --name zwift \
     -e DISPLAY=$DISPLAY \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /run/user/$UID/pulse:/run/user/1000/pulse \
-    -v zwift-$USER:/home/user/Zwift \
+    -v zwift-config:/home/user/Zwift \
     $([ "$CONTAINER_TOOL" = "podman" ] && echo '--userns=keep-id') \
-    $VGA_DEVICE_FLAG \
-    $IMAGE:$VERSION)
+    $VGA_DEVICE_FLAG $VGA_DEVICE_VALUE \
+    "${IMAGE_TAG}:$VERSION")
 
 if [[ -z $WAYLAND_DISPLAY ]]
 then
