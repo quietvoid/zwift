@@ -22,12 +22,21 @@ then
 fi
 
 # Start the zwift container
+# X11
+# -e DISPLAY=$DISPLAY \
+
+# Wayland
+# -e XDG_RUNTIME_DIR=/tmp \
+# -e WAYLAND_DISPLAY=$WAYLAND_DISPLAY \
+# -v $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY:/tmp/$WAYLAND_DISPLAY \
 CONTAINER=$($CONTAINER_TOOL run \
     -d \
     --rm \
     --privileged \
     --name zwift \
-    -e DISPLAY=$DISPLAY \
+    -e XDG_RUNTIME_DIR=/tmp \
+    -e WAYLAND_DISPLAY=$WAYLAND_DISPLAY \
+    -v $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY:/tmp/$WAYLAND_DISPLAY \
     -v /tmp/.X11-unix:/tmp/.X11-unix \
     -v /run/user/$UID/pulse:/run/user/1000/pulse \
     -v zwift-config:/home/user/Zwift \

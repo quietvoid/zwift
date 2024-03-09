@@ -5,6 +5,9 @@ set -x
 ZWIFT_HOME="$HOME/.wine/drive_c/Program Files (x86)/Zwift"
 WINE_USER_HOME="$HOME/.wine/drive_c/users/user"
 
+# DISPLAY=
+# wine regedit /S wayland.reg
+
 function get_current_version() {
     if [ -f Zwift_ver_cur_filename.txt ]; then
         # If Zwift_ver_cur_filename.txt exists, use it
@@ -86,6 +89,7 @@ then
     rm -rf "$WINE_USER_HOME/Downloads/Zwift"
     rm -rf "$WINE_USER_HOME/AppData/Local/Microsoft"
     rm -rf "$HOME"/.cache/wine*
+
     exit 0
 fi
 
