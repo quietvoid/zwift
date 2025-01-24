@@ -1,0 +1,16 @@
+w_metadata zwift apps \
+	title="Zwift" \
+	publisher="Zwift Inc." \
+	media="download" \
+	file1="ZwiftSetup.exe" \
+	installed_exe1="${W_PROGRAMS_X86_WIN}/Zwift/ZwiftLauncher.exe" \
+ 	installed_exe2="${W_PROGRAMS_X86_WIN}/Zwift/ZwiftApp.exe"
+	
+load_zwift()
+{
+    w_download https://cdn.zwift.com/app/ZwiftSetup.exe
+    cd "$W_CACHE/$W_PACKAGE"
+	w_ahk_do "
+		RunWait, ZwiftSetup.exe
+	"
+}
