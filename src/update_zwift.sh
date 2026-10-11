@@ -140,11 +140,11 @@ install_zwift() {
     msgbox info "Initializing wine"
     WINEDLLOVERRIDES="mscoree,mshtml=" wineboot -u || return 1
 
-    msgbox info "Installing prerequisites using winetricks"
-    winetricks -q corefonts dotnet48 d3dcompiler_47 webview2 || return 1
-
     msgbox info "Enabling Wayland support"
     wine reg.exe add HKCU\\Software\\Wine\\Drivers /f /v Graphics /d x11,wayland || return 1
+
+    msgbox info "Installing prerequisites using winetricks"
+    winetricks -q corefonts dotnet48 d3dcompiler_47 webview2 || return 1
 
     msgbox info "Downloading and installing Zwift"
     wget -O /tmp/ZwiftSetup.exe https://cdn.zwift.com/app/ZwiftSetup.exe || return 1
