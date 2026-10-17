@@ -144,8 +144,6 @@ if [[ ${CONTAINER_TOOL} == "docker" ]]; then
         msgbox error "Failed to update file ownership"
         exit 1
     fi
-
-    startup_cmd=(gosu user:user "${startup_cmd[@]}")
 fi
 
 #########################################
