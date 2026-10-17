@@ -51,11 +51,6 @@ command_exists() {
     cmd_path="$(command -v "${cmd}" 2> /dev/null)" && [[ -x ${cmd_path} ]]
 }
 
-nvidia_proprietary_driver() {
-    local nvidia_gpus
-    command_exists nvidia-smi && nvidia_gpus="$(nvidia-smi -L)" && [[ -n ${nvidia_gpus} ]]
-}
-
 echo -e "${COLOR_YELLOW}[!] ${STYLE_BOLD}Easily Zwift on linux!${RESET_STYLE}"
 echo -e "${COLOR_YELLOW}[!] ${STYLE_UNDERLINE}https://github.com/netbrain/zwift${RESET_STYLE}"
 
@@ -63,6 +58,13 @@ msgbox info "Preparing to build Zwift image"
 
 ################################
 ##### Initialize variables #####
+
+readonly IMAGE_OPERATION="${IMAGE_OPERATION:---install}"
+
+if [[ "${IMAGE_OPERATION}" != "--install" ]] && [[ "${IMAGE_OPERATION}" != "--update" ]]; then
+    msgbox error "Invalid image operation. Use --install (build) or --update (update existing image)"
+    exit 1
+fi
 
 # Initialize system environment variables
 readonly DISPLAY="${DISPLAY:-}"
@@ -98,8 +100,8 @@ if [[ ${CONTAINER_TOOL} == "podman" ]]; then
     readonly BUILD_NAME="zwift"
     readonly IMAGE="localhost/zwift"
 else
-    readonly BUILD_NAME="netbrain/zwift"
-    readonly IMAGE="netbrain/zwift"
+    readonly BUILD_NAME="zwift-local"
+    readonly IMAGE="zwift-local"
 fi
 msgbox info "Image will be called ${IMAGE}"
 
@@ -114,6 +116,7 @@ container_args=(
     --name "${TEMP_CONTAINER_NAME}"
     --security-opt label=type:container_runtime_t
     --hostname "${HOSTNAME}"
+    --device="/dev/dri"
 
     -e DEBUG="${DEBUG}"
     -e VERBOSITY="${VERBOSITY}"
@@ -153,21 +156,8 @@ if [[ -n ${XAUTHORITY} ]]; then
     )
 elif command_exists xhost && xhost +local: > /dev/null; then
     msgbox ok "Container X11 access provided through xhost"
-else
-    msgbox error "Container requires X11 access, but invoking xhost failed"
-    exit 1
 fi
 
-# Check for proprietary nvidia driver and set correct device to use
-if nvidia_proprietary_driver; then
-    if [[ ${CONTAINER_TOOL} == "podman" ]]; then
-        container_args+=(--device="nvidia.com/gpu=all")
-    else
-        container_args+=(--runtime=nvidia --gpus=all)
-    fi
-else
-    container_args+=(--device="/dev/dri")
-fi
 
 #############################################
 ##### Build container and install Zwift #####
@@ -183,16 +173,21 @@ cleanup() {
 }
 trap cleanup EXIT
 
-msgbox info "Building image ${IMAGE}"
-if ${CONTAINER_TOOL} build -t "${BUILD_NAME}" "${SCRIPT_DIR}"; then
-    msgbox ok "Successfully built image ${IMAGE}"
+if [[ "${IMAGE_OPERATION}" == "--install" ]]; then
+    msgbox info "Building image ${IMAGE}"
+    if ${CONTAINER_TOOL} build -t "${BUILD_NAME}" "${SCRIPT_DIR}"; then
+        msgbox ok "Successfully built image ${IMAGE}"
+    else
+        msgbox error "Failed to build image! 😭"
+        exit 1
+    fi
+
+    msgbox info "Launching temporary container to install Zwift"
 else
-    msgbox error "Failed to build image! 😭"
-    exit 1
+    msgbox info "Launching temporary container to update Zwift"
 fi
 
-msgbox info "Launching temporary container to install Zwift"
-if ${CONTAINER_TOOL} run "${container_args[@]}" "${IMAGE}:latest" --install; then
+if ${CONTAINER_TOOL} run "${container_args[@]}" "${IMAGE}:latest" "${IMAGE_OPERATION}"; then
     msgbox ok "Successfully installed Zwift in container"
 else
     msgbox error "Failed to install Zwift in container! 😭"
@@ -219,4 +214,4 @@ export IMAGE
 export DONT_UPDATE=1
 export ZWIFT_FG=1
 
-"${SCRIPT_DIR}/zwift.sh" "${@}"
+# "${SCRIPT_DIR}/zwift.sh" "${@}"

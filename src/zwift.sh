@@ -137,12 +137,12 @@ readonly XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/${UID}}"
 
 # Initialize user configuration environment variables
 readonly VERBOSITY="${VERBOSITY:-1}"
-readonly IMAGE="${IMAGE:-docker.io/netbrain/zwift}"
+readonly IMAGE="zwift-local"
 readonly VERSION="${VERSION:-latest}"
 readonly LATEST_SCRIPT_VERSION="master"
 readonly SCRIPT_VERSION="${SCRIPT_VERSION:-${LATEST_SCRIPT_VERSION}}"
 readonly DEFERRED_UPDATE="${DEFERRED_UPDATE:-0}"
-readonly DONT_UPDATE="${DONT_UPDATE:-0}"
+readonly DONT_UPDATE="${DONT_UPDATE:-1}"
 readonly DONT_CLEAN="${DONT_CLEAN:-0}"
 readonly DRYRUN="${DRYRUN:-0}"
 readonly INTERACTIVE="${INTERACTIVE:-0}"
@@ -720,7 +720,6 @@ elif [[ ${window_manager} == "XWayland" ]] || [[ ${window_manager} == "XOrg" ]];
         container_args+=(-v "${XAUTHORITY}:/tmp/.Xauthority")
     else
         msgbox info "XAUTHORITY environment variable not set, container access to X11 needs to be granted with xhost"
-        xhost_access_required=1
     fi
 fi
 

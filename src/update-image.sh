@@ -83,7 +83,7 @@ if [[ -z ${IMAGE} ]]; then
     if [[ ${CONTAINER_TOOL} == "podman" ]]; then
         IMAGE="localhost/zwift"
     else
-        IMAGE="netbrain/zwift"
+        IMAGE="zwift-local"
     fi
 fi
 readonly IMAGE
@@ -190,4 +190,4 @@ export VERSION
 export DONT_UPDATE=1
 export ZWIFT_FG=1
 
-"${SCRIPT_DIR}/zwift.sh" "${@}"
+# "${SCRIPT_DIR}/zwift.sh" "${@}"
