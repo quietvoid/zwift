@@ -33,6 +33,13 @@ readonly ZWIFT_OLD_DATA_DIR="${WINE_USER_HOME:?}/Documents/Zwift"
 readonly ZWIFT_PREFS_FILE="${ZWIFT_DATA_DIR}/prefs.xml"
 readonly ZWIFT_VOLUME="${ZWIFT_VOLUME:-}"
 
+readonly USE_PROTON="${USE_PROTON:-0}"
+readonly WINEPREFIX="${WINEPREFIX:?}"
+readonly PROTONPATH="${PROTONPATH:?}"
+readonly WINE_BIN_PREFIX="${WINE_BIN_PREFIX:?}"
+readonly WINE_EXEC="${WINE_EXEC:?}"
+readonly WINESERVER_EXEC="${WINESERVER_EXEC:?}"
+
 msgbox() {
     local type="${1:?}" # Type: info, ok, warning, error, debug
     local msg="${2:?}"  # Message: the message to display
@@ -52,7 +59,7 @@ msgbox() {
 
 wine_task_info() {
     local task_name="${1:?}"
-    wine tasklist /fo list /fi "IMAGENAME eq ${task_name}"
+    "${WINE_EXEC}" tasklist /fo list /fi "IMAGENAME eq ${task_name}"
 }
 
 wine_task_pid() {
@@ -68,7 +75,7 @@ is_wine_task_running() {
 kill_wine_tasks() {
     for task in "${@}"; do
         msgbox debug "Killing wine task '${task}'"
-        wine taskkill /f /im "${task}" > /dev/null 2>&1 || true
+        "${WINE_EXEC}" taskkill /f /im "${task}" > /dev/null 2>&1 || true
     done
 }
 
@@ -101,11 +108,17 @@ if ! [[ -f "${ZWIFT_INSTALL_DIR}/ZwiftApp.exe" ]]; then
     exit 1
 fi
 
-if ! zwift_wine_dir="$(winepath -w "${ZWIFT_INSTALL_DIR}")" || [[ -z ${zwift_wine_dir} ]]; then
-    msgbox error "Failed to convert Zwift installation path to win32 path for wine"
-    exit 1
+
+if [[ ${USE_PROTON} -eq 1 ]]; then
+    # GE Proton does not come with winepath and using the system's changes the prefix config
+    zwift_wine_dir="C:\Program Files (x86)\Zwift"
 else
-    msgbox debug "Zwift installation wine path is: ${zwift_wine_dir}"
+    if ! zwift_wine_dir="$(winepath -w "${ZWIFT_INSTALL_DIR}")" || [[ -z ${zwift_wine_dir} ]]; then
+        msgbox error "Failed to convert Zwift installation path to win32 path for wine"
+        exit 1
+    else
+        msgbox debug "Zwift installation wine path is: ${zwift_wine_dir}"
+    fi
 fi
 
 ##############################################
@@ -154,7 +167,7 @@ fi
 
 cleanup() {
     msgbox info "Stopping wine server"
-    wineserver -k || true
+    "${WINESERVER_EXEC}" -k || true
 }
 
 trap cleanup EXIT
@@ -177,7 +190,7 @@ trap cleanup EXIT
 
 msgbox info "Starting Zwift launcher using wine"
 
-if ! wine start /d "${zwift_wine_dir}" ZwiftLauncher.exe SilentLaunch || ! wait_until_wine_task_started ZwiftLauncher.exe; then
+if ! "${WINE_EXEC}" start /d "${zwift_wine_dir}" ZwiftLauncher.exe SilentLaunch || ! wait_until_wine_task_started ZwiftLauncher.exe; then
     msgbox error "Failed to start Zwift launcher using wine!"
     exit 1
 fi
@@ -191,7 +204,7 @@ msgbox ok "Zwift launcher started using wine"
 msgbox info "Starting Zwift using wine"
 
 declare -a zwift_cmd
-zwift_cmd=(wine start /d "${zwift_wine_dir}" /unix /bin/runfromprocess-rs.exe "${launcher_pid}" ZwiftApp.exe "${zwift_args[@]}")
+zwift_cmd=("${WINE_EXEC}" start /d "${zwift_wine_dir}" /unix /bin/runfromprocess-rs.exe "${launcher_pid}" ZwiftApp.exe "${zwift_args[@]}")
 
 if [[ ${ZWIFT_NO_GAMEMODE} -eq 1 ]]; then
     msgbox info "Not using gamemode"

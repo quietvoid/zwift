@@ -29,6 +29,18 @@ readonly XDG_SESSION_TYPE="${XDG_SESSION_TYPE:-x11}"
 readonly CONTAINER_TOOL="${CONTAINER_TOOL:?}"
 readonly ZWIFT_VOLUME="${ZWIFT_VOLUME:-}"
 
+export USE_PROTON="${USE_PROTON:-1}"
+export WINEPREFIX="$HOME/.wine"
+export PROTONPATH="$HOME/.local/bin/GE-Proton"
+
+if [[ ${USE_PROTON} -eq 1 ]]; then
+    export WINE_BIN_PREFIX="${PROTONPATH}/files/bin"
+fi
+
+export WINE_BIN_PREFIX="${WINE_BIN_PREFIX:-$(dirname $(which wine))}"
+export WINE_EXEC="${WINE_BIN_PREFIX}/wine"
+export WINESERVER_EXEC="${WINE_BIN_PREFIX}/wineserver"
+
 msgbox() {
     local type="${1:?}" # Type: info, ok, warning, error, debug
     local msg="${2:?}"  # Message: the message to display
@@ -113,7 +125,7 @@ if [[ ${CONTAINER_TOOL} == "docker" ]]; then
 
         # Only chown files that actually need it, rather than blindly recursing everything
         msgbox info "Updating ownership of files in ${target} (this may take a while on first run)..."
-        find "${target}" \( ! -user user -o ! -group user \) -exec chown user:user {} + || return 1
+        find "${target}" \( ! -user user -o ! -group user \) -exec sudo chown user:user {} + || return 1
     }
 
     if should_change_user_ids; then

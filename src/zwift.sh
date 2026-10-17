@@ -137,7 +137,7 @@ readonly XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/${UID}}"
 
 # Initialize user configuration environment variables
 readonly VERBOSITY="${VERBOSITY:-1}"
-readonly IMAGE="zwift-local"
+readonly IMAGE="zwift-local-proton"
 readonly VERSION="${VERSION:-latest}"
 readonly LATEST_SCRIPT_VERSION="master"
 readonly SCRIPT_VERSION="${SCRIPT_VERSION:-${LATEST_SCRIPT_VERSION}}"
@@ -450,6 +450,7 @@ container_args+=(
     --env-file "${container_env_file}"
     -v "zwift-${ZWIFT_RIDER}:${ZWIFT_VOLUME}"
 )
+# umu-launcher in Docker: --security-opt seccomp=unconfined
 
 ###################################################
 ##### Forward arguments passed to this script #####

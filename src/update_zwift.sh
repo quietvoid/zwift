@@ -28,6 +28,13 @@ readonly ZWIFT_DATA_DIR="${ZWIFT_DATA_DIR:?}"
 readonly ZWIFT_INSTALL_DIR="${ZWIFT_INSTALL_DIR:?}"
 readonly ZWIFT_PERMISSIVE_UPDATE="${ZWIFT_PERMISSIVE_UPDATE:-0}"
 
+readonly USE_PROTON="${USE_PROTON:-0}"
+readonly WINEPREFIX="${WINEPREFIX:?}"
+readonly PROTONPATH="${PROTONPATH:?}"
+readonly WINE_BIN_PREFIX="${WINE_BIN_PREFIX:?}"
+readonly WINE_EXEC="${WINE_EXEC:?}"
+readonly WINESERVER_EXEC="${WINESERVER_EXEC:?}"
+
 msgbox() {
     local type="${1:?}" # Type: info, ok, warning, error, debug
     local msg="${2:?}"  # Message: the message to display
@@ -47,7 +54,7 @@ msgbox() {
 
 wine_task_info() {
     local task_name="${1:?}"
-    wine tasklist /fo list /fi "IMAGENAME eq ${task_name}"
+    "${WINE_EXEC}" tasklist /fo list /fi "IMAGENAME eq ${task_name}"
 }
 
 is_wine_task_running() {
@@ -92,13 +99,20 @@ update_zwift_using_launcher() {
 
     msgbox info "Starting Zwift launcher using wine"
     local zwift_wine_dir
-    if ! zwift_wine_dir="$(winepath -w "${ZWIFT_INSTALL_DIR}")" || [[ -z ${zwift_wine_dir} ]]; then
-        msgbox error "Failed to convert Zwift installation path to win32 path for wine"
-        exit 1
+
+    if [[ ${USE_PROTON} -eq 1 ]]; then
+        # GE Proton does not come with winepath and using the system's changes the prefix config
+        zwift_wine_dir="C:\Program Files (x86)\Zwift"
     else
-        msgbox debug "Zwift installation wine path is: ${zwift_wine_dir}"
+        if ! zwift_wine_dir="$(winepath -w "${ZWIFT_INSTALL_DIR}")" || [[ -z ${zwift_wine_dir} ]]; then
+            msgbox error "Failed to convert Zwift installation path to win32 path for wine"
+            exit 1
+        else
+            msgbox debug "Zwift installation wine path is: ${zwift_wine_dir}"
+        fi
     fi
-    if ! wine start /d "${zwift_wine_dir}" ZwiftLauncher.exe SilentLaunch; then
+
+    if ! ${WINE_EXEC} start /d "${zwift_wine_dir}" ZwiftLauncher.exe SilentLaunch; then
         msgbox error "Failed to start Zwift launcher using wine!"
         return 1
     fi
@@ -154,9 +168,9 @@ install_zwift() {
 
     msgbox info "Downloading and installing Zwift"
     wget -O /tmp/ZwiftSetup.exe https://cdn.zwift.com/app/ZwiftSetup.exe || return 1
-    wine /tmp/ZwiftSetup.exe /SP- /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /NOCANCEL || return 1
+    "${WINE_EXEC}" /tmp/ZwiftSetup.exe /SP- /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /NOCANCEL || return 1
 
-    wineserver -k || true # workaround for issue 420, ZwiftLauncher v1.2.0 crashes immediately
+    "${WINESERVER_EXEC}" -k || true # workaround for issue 420, ZwiftLauncher v1.2.0 crashes immediately
 }
 
 #########################################
@@ -164,7 +178,7 @@ install_zwift() {
 
 cleanup() {
     msgbox info "Stopping wine server"
-    wineserver -k || true # important, Zwift launcher won't stop until wine server is killed
+    "${WINESERVER_EXEC}" -k || true # important, Zwift launcher won't stop until wine server is killed
 
     msgbox info "Removing installation artifacts"
     rm -f -- "/tmp/ZwiftSetup.exe" || true
