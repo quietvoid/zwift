@@ -57,8 +57,6 @@ nvidia_proprietary_driver() {
     command_exists nvidia-smi && nvidia_gpus="$(nvidia-smi -L)" && [[ -n ${nvidia_gpus} ]]
 }
 
-declare -a run_as=()
-
 ######################################
 ##### Change ownership if needed #####
 
@@ -135,8 +133,6 @@ if [[ ${CONTAINER_TOOL} == "docker" ]]; then
         msgbox error "Failed to update file ownership"
         exit 1
     fi
-
-    run_as=(gosu user:user)
 fi
 
 #####################################
@@ -145,9 +141,6 @@ fi
 if [[ ${XDG_SESSION_TYPE} == "wayland" ]]; then
     msgbox info "Enabling native Wayland"
     unset DISPLAY # DISPLAY variable needs to be empty for wine to use native wayland
-elif [[ ${WINE_DISABLE_EGL} -eq 1 ]]; then
-    msgbox info "Disabling EGL (using GLX instead)"
-    "${run_as[@]}" wine reg.exe add 'HKCU\Software\Wine\X11 Driver' /f /v UseEGL /d N > /dev/null 2>&1 || exit 1
 elif nvidia_proprietary_driver; then
     msgbox info "Detected nvidia graphics, performing EGL vendor library workaround"
     export __EGL_VENDOR_LIBRARY_FILENAMES=""
@@ -160,7 +153,7 @@ fi
 
 msgbox debug "Entrypoint script invoked with arguments: ${*:-none}"
 
-declare -a startup_cmd=("${run_as[@]}")
+declare -a startup_cmd=()
 
 if [[ ${1:-} == "--install" ]] || [[ ${1:-} == "--update" ]]; then
     startup_cmd+=(/bin/update_zwift.sh "${1:-}")

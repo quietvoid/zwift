@@ -83,7 +83,7 @@ if [[ -z ${IMAGE} ]]; then
     if [[ ${CONTAINER_TOOL} == "podman" ]]; then
         IMAGE="localhost/zwift"
     else
-        IMAGE="netbrain/zwift"
+        IMAGE="zwift-local"
     fi
 fi
 readonly IMAGE
